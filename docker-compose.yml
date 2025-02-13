@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  java-app:
+    build:
+      context: ./java-app
+      dockerfile: Dockerfile
+    container_name: java-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  python-app:
+    build:
+      context: ./python-app
+      dockerfile: Dockerfile
+    container_name: python-service
+    ports:
+      - "5000:5000"
+    environment:
+      - RECOMMENDATION_PORT=5000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  react-app:
+    build:
+      context: ./react-app
+      dockerfile: Dockerfile
+    container_name: react-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      java-app:
+        condition: service_healthy
+      python-app:
+        condition: service_healthy
+    networks:
+      - frontend
+
+networks:
+  frontend:
+  backend:
